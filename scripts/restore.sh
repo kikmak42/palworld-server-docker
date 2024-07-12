@@ -40,23 +40,32 @@ if [ "${RCON_ENABLED}" != true ]; then
     exit 1
 fi
 
-# Show up backup list
-LogInfo "Backup List:"
-mapfile -t BACKUP_FILES < <(find "$BACKUP_DIRECTORY_PATH" -type f -name "*.tar.gz" | sort)
-select BACKUP_FILE in "${BACKUP_FILES[@]}"; do
-    if [ -n "$BACKUP_FILE" ]; then
-        LogInfo "Selected backup: $BACKUP_FILE"
-        break
-    else
-        LogWarn "Invalid selection. Please try again."
-    fi
-done
+# Check if any argument passwed while calling
+if [ $# -eq 0 ]
+    then
+        # Show up backup list
+        LogInfo "Backup List:"
+        mapfile -t BACKUP_FILES < <(find "$BACKUP_DIRECTORY_PATH" -type f -name "*.tar.gz" | sort)
+        select BACKUP_FILE in "${BACKUP_FILES[@]}"; do
+            if [ -n "$BACKUP_FILE" ]; then
+                LogInfo "Selected backup: $BACKUP_FILE"
+                break
+            else
+                LogWarn "Invalid selection. Please try again."
+            fi
+        done
+  else
+        BACKUP_FILE=$1
+        SKIP_CONSENT="yes"
+        LogInfo "The selected backup file : $BACKUP_FILE"
+fi
+
 
 if [ -f "$BACKUP_FILE" ]; then
     LogInfo "This script has been designed to help you restore; however, I am not responsible for any data loss. It is recommended that you create a backup beforehand, and in the event of script failure, be prepared to restore it manually."
     LogInfo "Do you understand the above and would you like to proceed with this command?"
     read -rp "When you run it, the server will be stopped and the recovery will proceed. (y/n): " RUN_ANSWER
-    if [[ ${RUN_ANSWER,,} == "y" ]]; then
+    if [[ ${RUN_ANSWER,,} == "y" || "$SKIP_CONSENT" == "yes" ]]; then
         LogAction "Starting Recovery Process"
         # Shutdown server
         trap 'term_error_handler' ERR
